@@ -1,0 +1,2 @@
+# Script to run 'coverage' on our test suite
+coverage run --source=wlcabinetsorter ./runtests.py && coverage report -m

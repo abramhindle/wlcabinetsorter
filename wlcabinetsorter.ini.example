@@ -1,0 +1,16 @@
+[mods]
+clone_url = git@github.com-githubusername:BLCM/wlmods.git
+base_url = https://github.com/BLCM/wlmods/tree/master/
+download_url = https://raw.githubusercontent.com/BLCM/wlmods/master/
+repo_dir = /home/username/git/wlmods
+
+[wiki]
+clone_url = git@github.com-githubusername:BLCM/wlmods.wiki.git
+cabinet_dir = /home/username/git/wlmods.wiki
+
+[cache]
+cache_dir = cache
+
+[logging]
+log_dir = logs
+default_level = INFO
