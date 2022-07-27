@@ -7,11 +7,6 @@
 **Contact:** {{ mod.contact }}
 {%- endif %}
 
-{%- if mod.contact_url %}
-
-**Contact (web):** {{ mod.contact_url }}
-{%- endif %}
-
 {%- if mod.contact_email %}
 
 **Contact (email):** {{ mod.get_wiki_email_contact() }}
@@ -30,6 +25,11 @@
 {%- endif %}
 
 **In Categories:** {{ mod.get_cat_links(cats) }}
+
+{%- if mod.homepage %}
+
+**Homepage:** {{ mod.homepage.url }}
+{%- endif %}
 
 {%- if mod.license %}
 {%- if mod.license_url %}
