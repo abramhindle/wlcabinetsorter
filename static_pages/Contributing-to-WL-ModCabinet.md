@@ -180,8 +180,8 @@ if there's nothing right at the beginning).  That will be imported into
 the WL ModCabinet wiki.  If you have a section named `Changelog`, that will
 be imported into the ModCabinet page as well.  For an example of a
 ModCabinet page which has pulled in all these elements, see Apocalyptech's
-[[WL Better Loot]], which was generated using
-[this README](https://raw.githubusercontent.com/BLCM/wlmods/master/Apocalyptech/loot_changes/better_loot/README.md).
+[[Early Bloomer]], which was generated using
+[this README](https://raw.githubusercontent.com/BLCM/wlmods/master/Apocalyptech/loot_changes/early_bloomer/README.md).
 
 In a directory with multiple mods, ModCabinet needs to have a clearly-marked
 section of the README file which has the same name as the mod.  Sections
