@@ -1541,6 +1541,7 @@ class App(object):
         ('gear-shotgun', Category('Weapons/Gear: Shotguns')),
         ('gear-smg', Category('Weapons/Gear: SMGs')),
         ('gear-sniper', Category('Weapons/Gear: Sniper Rifles')),
+        ('gear-melee', Category('Weapons/Gear: Melee Weapons')),
         ('gear-spell', Category('Weapons/Gear: Spells')),
         ('gear-ward', Category('Weapons/Gear: Wards')),
         ('gear-armor', Category('Weapons/Gear: Armor')),
