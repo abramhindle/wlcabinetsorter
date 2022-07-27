@@ -2,6 +2,11 @@
 
 **Author:** {{ authors[mod.mod_author].wiki_link() }}
 
+{%- if mod.other_authors %}
+
+**Other Authors:** {{ mod.get_other_authors_report() }}
+{%- endif %}
+
 {%- if mod.contact %}
 
 **Contact:** {{ mod.contact }}

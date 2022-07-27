@@ -423,6 +423,9 @@ class ModFile(Cacheable):
         self.mod_time = datetime.datetime.fromtimestamp(mtime)
         self.mod_title = None
         self.mod_title_display = None
+        self._mod_author = None
+        self.other_authors = []
+        self._authors_set = set()
         self.version = None
         self.license = None
         self.license_url = None
@@ -522,6 +525,7 @@ class ModFile(Cacheable):
                 'rf': self.rel_filename,
                 'w': self.wiki_filename_base,
                 'a': self.mod_author,
+                'oa': self.other_authors,
                 'cg': self.contact,
                 'ce': self.contact_email,
                 'cd': self.contact_discord,
@@ -552,6 +556,13 @@ class ModFile(Cacheable):
         self.rel_filename = input_dict['rf']
         self.wiki_filename_base = input_dict['w']
         self.mod_author = input_dict['a']
+        # other_authors added 2022-07-26
+        if 'oa' in input_dict:
+            for oa in input_dict['oa']:
+                self.add_other_author(oa)
+        else:
+            self.other_authors = []
+
         self.mod_title = input_dict['t']
         self.mod_title_display = input_dict['i']
         self.version = input_dict['v']
@@ -595,6 +606,25 @@ class ModFile(Cacheable):
         Returns our "full" relative filename
         """
         return os.path.join(self.rel_path, self.rel_filename)
+
+    @property
+    def mod_author(self):
+        """
+        Return our mod_author (doing some fancy stuff in the setter, which
+        is why this is here).
+        """
+        return self._mod_author
+
+    @mod_author.setter
+    def mod_author(self, author):
+        """
+        Sets our main mod author, and initialize our stupid author-tracking set.
+        """
+        self._mod_author = author
+        if author is None:
+            self._authors_set = set()
+        else:
+            self._authors_set = {author.lower()}
 
     def set_title_display(self, mod_title_display):
         """
@@ -652,6 +682,31 @@ class ModFile(Cacheable):
         if self.status != Cacheable.S_NEW and new_changelog != self.changelog:
             self.status = Cacheable.S_UPDATED
         self.changelog = new_changelog
+
+    def add_other_author(self, other_author):
+        """
+        Adds an "other author" entry to our list.  The ModCabinet uses the directory
+        structure to determine the author that it sorts with and links to, but users
+        might have collaborators listed, or even just list a different name.  As we
+        encounter these tags, we'll add them in so long as they're not identical to
+        the directory-name author (case-insensitively).
+        """
+        if self.mod_author is None:
+            # This should never happen 'cause this only gets called from
+            # `load_text_hotfixes`, which itself is called after `self.mod_author`
+            # is set.  But anyway, handle it good ol' ostrich-style.
+            return
+        other_author_lower = other_author.lower()
+        if other_author_lower in self._authors_set:
+            return
+        self._authors_set.add(other_author_lower)
+        self.other_authors.append(other_author)
+
+    def get_other_authors_report(self):
+        """
+        Returns a string of other authors suitable for inclusion on a wiki page.
+        """
+        return ', '.join(self.other_authors)
 
     def load_text_hotfixes(self, df):
         """
@@ -754,9 +809,7 @@ class ModFile(Cacheable):
                                         self.rel_filename,
                                         ))
                             elif key == 'author':
-                                # Ignoring this; we actually take it from the directory
-                                # TODO: save and at least *report* on it.
-                                pass
+                                self.add_other_author(val)
                             elif key == 'contact':
                                 self.contact = val
                             elif key == 'contact (email)':
@@ -852,12 +905,11 @@ class ModFile(Cacheable):
                                             self.rel_filename,
                                             ))
                                 elif key == 'author':
-                                    # Ignoring this; we actually take it from the directory
-                                    # TODO: save and at least *report* on it.
-                                    pass
+                                    self.add_other_author(val)
                                 elif key == 'main-author':
-                                    # TODO: ^ ditto
-                                    pass
+                                    # Fudging this a bit; we're out of BLIMP spec on account of how we handle
+                                    # these anyway, though, alas.
+                                    self.add_other_author(val)
                                 elif key == 'contact':
                                     if self.contact is None:
                                         self.contact = val

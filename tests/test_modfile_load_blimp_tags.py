@@ -549,3 +549,71 @@ class ModFileTextBlimpTagsTests(unittest.TestCase):
         self.assertEqual(self.modfile.mod_desc, ['@title Another Name', '@categories scaling'])
         self.assertFalse(self.modfile.has_errors())
 
+    def test_load_other_authors_same(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@author Apocalyptech',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, [])
+
+    def test_load_other_authors_same_different_case(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@author APOCALYPTECH',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, [])
+
+    def test_load_other_authors_different(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@author CJ',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, ['CJ'])
+
+    def test_load_other_authors_two(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@author CJ',
+            '@author Pseudonym',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, ['CJ', 'Pseudonym'])
+
+    def test_load_other_authors_two_but_same_case(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@author cj',
+            '@author CJ',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, ['cj'])
+
+    def test_load_other_authors_main(self):
+        self.set_df_contents([
+            '@title Mod Name',
+            '@categories qol',
+            '@main-author CJ',
+            ])
+        self.modfile.mod_author = 'Apocalyptech'
+        self.modfile.load_text_hotfixes(self.df)
+        self.assertEqual(self.modfile.mod_author, 'Apocalyptech')
+        self.assertEqual(self.modfile.other_authors, ['CJ'])
+
