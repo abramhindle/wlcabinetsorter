@@ -83,7 +83,9 @@ WL ModCabinet.  `@version` is entirely optional, but is a nice way for users to
 know if they're using the most recent version of a mod or not.  `@author` is
 mostly for the user's sake, so they can know who wrote the mod by just looking
 at their files.  Note that the WL ModCabinet process will actually report the
-username of the *directory* your mod lives in, rather than your text here.
+username of the *directory* your mod lives in as the main author, rather than
+your text here.  The info from the `@author` statement will still be included
+on the ModCabinet page, though.
 
 ## Contact Info
 
