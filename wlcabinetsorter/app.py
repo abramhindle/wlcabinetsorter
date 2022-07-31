@@ -751,15 +751,24 @@ class ModFile(Cacheable):
         df.seek(0)
         cur_section = []
         found_raw_comment = False
+        found_empty_line_after_tags = False
         tag_type = None
         for line in df.readlines():
             # If we get to a `Spark` line, break
             if line.startswith('Spark'):
+                # If we have unprocessed comment lines and we have *not* had any
+                # blank lines after our tags, consider any comment lines to be
+                # "true" comments and add them in now.
+                if found_raw_comment and cur_section and not found_empty_line_after_tags:
+                    for line in cur_section:
+                        self.add_comment_line(line)
                 break
 
             stripped = line.strip()
             if stripped == '':
                 # Found an empty line
+                if not found_empty_line_after_tags and tag_type is not None:
+                    found_empty_line_after_tags = True
                 if found_raw_comment and cur_section:
                     # If we're reading "raw" comments and have been reading in
                     # a comment section, append it to our full description
