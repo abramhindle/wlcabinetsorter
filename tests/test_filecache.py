@@ -295,8 +295,8 @@ class FileCacheTests(unittest.TestCase):
 
     def test_load_mod_new_file(self):
         mod_filename = self.make_file('', 'filename', [
-            '# Name: Mod Name',
-            '# Categories: cat1',
+            '# @title Mod Name',
+            '# @categories cat1',
             '# testing',
             '',
             'SparkServiceWhatever',
@@ -335,8 +335,8 @@ class FileCacheTests(unittest.TestCase):
 
     def test_load_mod_newer(self):
         mod_filename = self.make_file('', 'filename', [
-            '# Name: Mod Name',
-            '# Categories: cat1',
+            '# @title Mod Name',
+            '# @categories cat1',
             '# testing',
             '',
             'SparkServiceWhatever',

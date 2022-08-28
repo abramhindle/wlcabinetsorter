@@ -543,11 +543,10 @@ class ModFileTextBlimpTagsTests(unittest.TestCase):
             '@title Another Name',
             '@categories scaling',
             ])
-        self.modfile.load_text_hotfixes(self.df)
-        self.assertEqual(self.modfile.mod_title, 'Mod Name')
-        self.assertEqual(self.modfile.categories, set(['qol']))
-        self.assertEqual(self.modfile.mod_desc, ['@title Another Name', '@categories scaling'])
-        self.assertFalse(self.modfile.has_errors())
+        # We expect this to fail; old-style tags aren't supported anymore
+        with self.assertRaises(NotAModFile) as cm:
+            self.modfile.load_text_hotfixes(self.df)
+        self.assertIn('No mod title', str(cm.exception))
 
     def test_load_other_authors_same(self):
         self.set_df_contents([

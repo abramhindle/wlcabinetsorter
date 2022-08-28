@@ -404,10 +404,6 @@ class FakeMod:
         global wiki_link_html
         return wiki_link_html(self.mod_title, self.mod_title)
 
-class TagType(enum.Enum):
-    ORIG = enum.auto()
-    BLIMP = enum.auto()
-
 class ModFile(Cacheable):
     """
     Class to pull info out of a mod file.
@@ -752,7 +748,7 @@ class ModFile(Cacheable):
         cur_section = []
         found_raw_comment = False
         found_empty_line_after_tags = False
-        tag_type = None
+        found_tag = False
         for line in df.readlines():
             # If we get to a `Spark` line, break
             if line.startswith('Spark'):
@@ -767,7 +763,7 @@ class ModFile(Cacheable):
             stripped = line.strip()
             if stripped == '':
                 # Found an empty line
-                if not found_empty_line_after_tags and tag_type is not None:
+                if not found_empty_line_after_tags and found_tag:
                     found_empty_line_after_tags = True
                 if found_raw_comment and cur_section:
                     # If we're reading "raw" comments and have been reading in
@@ -791,24 +787,30 @@ class ModFile(Cacheable):
                 if found_raw_comment:
                     cur_section.append(stripped)
                 else:
-                    if tag_type is None:
-                        # Checking BLIMP tags first because otherwise if a tag value
-                        # has a colon in it, it would get autodetected the wrong way.
+                    # This little section here is a remnant of when we supported both BLIMP and
+                    # "old-style" tags; didn't care enough to go through and see if we really
+                    # need to check this or not.
+                    if not found_tag:
                         if stripped.startswith('@'):
-                            tag_type = TagType.BLIMP
-                        elif ': ' in stripped:
-                            tag_type = TagType.ORIG
-
+                            found_tag = True
                     processed_tag = False
 
-                    # Process original-style tags
-                    if tag_type == TagType.ORIG:
-                        if ': ' in stripped:
-                            processed_tag = True
-                            key, val = stripped.split(': ', 1)
+                    # Parse BLIMP tags - https://github.com/apple1417/blcmm-parsing/tree/master/blimp#tag-intepretation
+                    if stripped.startswith('@'):
+                        processed_tag = True
+                        parts = stripped[1:].split(' ', 1)
+                        if len(parts) != 2:
+                            self.errors = True
+                            self.error_list.append('WARNING: Bare tag "{}" found in `{}/{}`'.format(
+                                parts,
+                                self.rel_path,
+                                self.rel_filename,
+                                ))
+                        else:
+                            key, val = stripped[1:].split(' ', 1)
                             key = key.strip().lower()
                             val = val.strip()
-                            if key == 'name':
+                            if key == 'title':
                                 if not self.mod_title:
                                     self.mod_title = val
                                 else:
@@ -819,12 +821,33 @@ class ModFile(Cacheable):
                                         ))
                             elif key == 'author':
                                 self.add_other_author(val)
+                            elif key == 'main-author':
+                                # Fudging this a bit; we're out of BLIMP spec on account of how we handle
+                                # these anyway, though, alas.
+                                self.add_other_author(val)
                             elif key == 'contact':
-                                self.contact = val
-                            elif key == 'contact (email)':
-                                self.contact_email = val
-                            elif key == 'contact (discord)':
-                                self.contact_discord = val
+                                if self.contact is None:
+                                    self.contact = val
+                                else:
+                                    self.contact = f'{self.contact}, {val}'
+                            elif key == 'contact-email':
+                                if self.contact_email is None:
+                                    self.contact_email = val
+                                else:
+                                    self.errors = True
+                                    self.error_list.append('WARNING: More than one email contact specified in `{}/{}`'.format(
+                                        self.rel_path,
+                                        self.rel_filename,
+                                        ))
+                            elif key == 'contact-discord':
+                                if self.contact_discord is None:
+                                    self.contact_discord = val
+                                else:
+                                    self.errors = True
+                                    self.error_list.append('WARNING: More than one Discord contact specified in `{}/{}`'.format(
+                                        self.rel_path,
+                                        self.rel_filename,
+                                        ))
                             elif key == 'version':
                                 if not self.version:
                                     self.version = val
@@ -855,7 +878,7 @@ class ModFile(Cacheable):
                                         self.rel_path,
                                         self.rel_filename,
                                         ))
-                            elif key == 'license url':
+                            elif key == 'license-url':
                                 if not self.license_url:
                                     self.license_url = val
                                 else:
@@ -868,6 +891,15 @@ class ModFile(Cacheable):
                                 self.screenshots.append(ModURL(val))
                             elif key == 'video':
                                 self.video_urls.append(ModURL(val))
+                            elif key == 'homepage':
+                                if not self.homepage:
+                                    self.homepage = ModURL(val)
+                                else:
+                                    self.errors = True
+                                    self.error_list.append('WARNING: More than one homepage specified in `{}/{}`'.format(
+                                        self.rel_path,
+                                        self.rel_filename,
+                                        ))
                             elif key == 'nexus':
                                 if not self.nexus_link:
                                     self.nexus_link = ModURL(val)
@@ -886,132 +918,6 @@ class ModFile(Cacheable):
                                     self.rel_path,
                                     self.rel_filename,
                                     ))
-
-                    # Parse BLIMP tags - https://github.com/apple1417/blcmm-parsing/tree/master/blimp#tag-intepretation
-                    # Honestly, this is hardly any different than our "generic" parsing, above.
-                    elif tag_type == TagType.BLIMP:
-                        if stripped.startswith('@'):
-                            processed_tag = True
-                            parts = stripped[1:].split(' ', 1)
-                            if len(parts) != 2:
-                                self.errors = True
-                                self.error_list.append('WARNING: Bare tag "{}" found in `{}/{}`'.format(
-                                    parts,
-                                    self.rel_path,
-                                    self.rel_filename,
-                                    ))
-                            else:
-                                key, val = stripped[1:].split(' ', 1)
-                                key = key.strip().lower()
-                                val = val.strip()
-                                if key == 'title':
-                                    if not self.mod_title:
-                                        self.mod_title = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one mod name specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'author':
-                                    self.add_other_author(val)
-                                elif key == 'main-author':
-                                    # Fudging this a bit; we're out of BLIMP spec on account of how we handle
-                                    # these anyway, though, alas.
-                                    self.add_other_author(val)
-                                elif key == 'contact':
-                                    if self.contact is None:
-                                        self.contact = val
-                                    else:
-                                        self.contact = f'{self.contact}, {val}'
-                                elif key == 'contact-email':
-                                    if self.contact_email is None:
-                                        self.contact_email = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one email contact specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'contact-discord':
-                                    if self.contact_discord is None:
-                                        self.contact_discord = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one Discord contact specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'version':
-                                    if not self.version:
-                                        self.version = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one version specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'categories':
-                                    for cat in [c.strip().lower() for c in val.split(',')]:
-                                        if cat in self.valid_categories:
-                                            self.categories.add(cat)
-                                        else:
-                                            self.errors = True
-                                            self.error_list.append('WARNING: Invalid category "{}" in `{}/{}`'.format(
-                                                cat,
-                                                self.rel_path,
-                                                self.rel_filename,
-                                                ))
-                                elif key == 'license':
-                                    # TODO: Honestly, we should probably allow multiple licenses...
-                                    if not self.license:
-                                        self.license = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one license specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'license-url':
-                                    if not self.license_url:
-                                        self.license_url = val
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one license URL specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'screenshot':
-                                    self.screenshots.append(ModURL(val))
-                                elif key == 'video':
-                                    self.video_urls.append(ModURL(val))
-                                elif key == 'homepage':
-                                    if not self.homepage:
-                                        self.homepage = ModURL(val)
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one homepage specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'nexus':
-                                    if not self.nexus_link:
-                                        self.nexus_link = ModURL(val)
-                                    else:
-                                        self.errors = True
-                                        self.error_list.append('WARNING: More than one nexus URL specified in `{}/{}`'.format(
-                                            self.rel_path,
-                                            self.rel_filename,
-                                            ))
-                                elif key == 'url':
-                                    self.urls.append(ModURL(val))
-                                else:
-                                    self.errors = True
-                                    self.error_list.append('WARNING: Unknown key "{}" in `{}/{}`'.format(
-                                        key,
-                                        self.rel_path,
-                                        self.rel_filename,
-                                        ))
 
                     if not processed_tag and stripped != '':
                         # Okay, we got something that wasn't a `Key: Value` type thing, so
