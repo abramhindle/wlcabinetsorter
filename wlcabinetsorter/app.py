@@ -440,6 +440,7 @@ class ModFile(Cacheable):
         self.categories = set()
         self.changelog = []
         self.related_links = []
+        self.pakfile = None
         self.re = Re()
         self.errors = False
         self.is_real = True
@@ -541,6 +542,7 @@ class ModFile(Cacheable):
                 'y': [str(y) for y in self.video_urls],
                 'u': [str(u) for u in self.urls],
                 'c': list(self.categories),
+                'p': self.pakfile,
                 }
 
     def _unserialize(self, input_dict):
@@ -596,6 +598,12 @@ class ModFile(Cacheable):
             self.contact_discord = input_dict['cd']
         else:
             self.contact_discord = None
+
+        # Pakfile reference, added 2022-09-08
+        if 'p' in input_dict and input_dict['p']:
+            self.pakfile = input_dict['p']
+        else:
+            self.pakfile = None
 
     def get_full_rel_filename(self):
         """
@@ -911,6 +919,15 @@ class ModFile(Cacheable):
                                         ))
                             elif key == 'url':
                                 self.urls.append(ModURL(val))
+                            elif key == 'pakfile':
+                                if not self.pakfile:
+                                    self.pakfile = val
+                                else:
+                                    self.errors = True
+                                    self.error_list.append('WARNING: More than one pakfile specified in `{}/{}`'.format(
+                                        self.rel_path,
+                                        self.rel_filename,
+                                        ))
                             else:
                                 self.errors = True
                                 self.error_list.append('WARNING: Unknown key "{}" in `{}/{}`'.format(
