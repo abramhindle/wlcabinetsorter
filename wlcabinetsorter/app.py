@@ -1567,6 +1567,7 @@ class App(object):
         self.sidebar_template = jinja_env.get_template('sidebar.md')
         self.author_template = jinja_env.get_template('author.md')
         self.category_template = jinja_env.get_template('categories.md')
+        self.all_template = jinja_env.get_template('all.md')
         self.authors_template = jinja_env.get_template('authors.md')
 
     def run(self, load_cache=True, quiet=False, verbose=False, **args):
@@ -1928,6 +1929,15 @@ class App(object):
                             'authors': self.author_cache,
                             }),
                         )
+
+        self.logger.debug('Writing out all mods page')
+        self.write_wiki_file(wiki_files,
+                'all.md',
+                self.all_template.render({
+                    'mods': sorted( [x for l in list(seen_cats.values()) for x in l] ),
+                    'authors': self.author_cache,
+                    }),
+                )
 
         # Write out "authors" page
         self.logger.debug('Writing out Authors page')
