@@ -1934,7 +1934,7 @@ class App(object):
         self.write_wiki_file(wiki_files,
                 'all.md',
                 self.all_template.render({
-                    'mods': sorted( [x for l in list(seen_cats.values()) for x in l] ),
+                    'mods': sorted( set([x for l in list(seen_cats.values()) for x in l]) ),
                     'authors': self.author_cache,
                     }),
                 )
